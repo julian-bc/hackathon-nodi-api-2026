@@ -7,6 +7,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { validate } from 'src/config/env.validate';
 import { BullModule } from '@nestjs/bullmq';
 import { NotificationsModule } from 'src/modules/notifications/notifications.module';
+import { MedicationModule } from 'src/medication/medication.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { NotificationsModule } from 'src/modules/notifications/notifications.mod
       connection: { host: 'localhost', port: 6379 }
     }),
     NotificationsModule,
+    MedicationModule,
+    UserModule,
   ],
 })
 export class AppModule {}
