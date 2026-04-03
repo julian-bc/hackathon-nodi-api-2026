@@ -26,17 +26,4 @@ export class NotificationsController {
     async markAllAsRead(@Param('userId') userId: string) {
         return this.notificationsService.markAllAsRead(userId);
     }
-
-    @Post('test')
-    async test() {
-    await this.notificationsService.send({
-            userId: '123',
-            title: '✅ Medicamento disponible',
-            message: 'El Ibuprofeno 400mg ya está disponible en Sede Norte.',
-            type: NotificationType.MEDICINE_AVAILABLE,
-            channels: [NotificationChannel.IN_APP],
-            metadata: { medicineId: 'abc123' },
-        });
-        return { ok: true };
-    }
 }

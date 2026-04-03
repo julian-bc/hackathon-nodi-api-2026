@@ -40,20 +40,15 @@ export class NotificationsService {
     const { medicineName, branchName, newStatus } = dto;
 
     const patientMessages: Record<MedicineStatus, { title: string; message: string; type: NotificationType }> = {
-      [MedicineStatus.AVAILABLE]: {
+      [MedicineStatus.ACTIVE]: {
         title: '✅ Medicamento disponible',
         message: `${medicineName} ya está disponible en ${branchName}.`,
-        type: NotificationType.MEDICINE_AVAILABLE,
+        type: NotificationType.MEDICINE_ACTIVE,
       },
       [MedicineStatus.OUT_OF_STOCK]: {
         title: '❌ Medicamento agotado',
         message: `${medicineName} se ha agotado en ${branchName}.`,
         type: NotificationType.MEDICINE_OUT_OF_STOCK,
-      },
-      [MedicineStatus.RESTOCKING]: {
-        title: '🔄 Medicamento en reposición',
-        message: `${medicineName} está siendo repuesto en ${branchName}. Te avisamos cuando llegue.`,
-        type: NotificationType.MEDICINE_RESTOCKING,
       },
       [MedicineStatus.LOW_STOCK]: {
         title: '⚠️ Pocas unidades disponibles',
@@ -63,20 +58,15 @@ export class NotificationsService {
     };
 
     const workerMessages: Record<MedicineStatus, { title: string; message: string; type: NotificationType }> = {
-      [MedicineStatus.AVAILABLE]: {
+      [MedicineStatus.ACTIVE]: {
         title: '📦 Stock normalizado',
         message: `${medicineName} volvió a estar disponible en ${branchName}.`,
-        type: NotificationType.STOCK_AVAILABLE_ALERT,
+        type: NotificationType.STOCK_ACTIVE_ALERT,
       },
       [MedicineStatus.OUT_OF_STOCK]: {
         title: '🚨 Medicamento agotado',
         message: `${medicineName} se agotó en ${branchName}. Gestionar reposición.`,
         type: NotificationType.STOCK_EMPTY_ALERT,
-      },
-      [MedicineStatus.RESTOCKING]: {
-        title: '🔄 Reposición iniciada',
-        message: `${medicineName} está en proceso de reposición en ${branchName}.`,
-        type: NotificationType.STOCK_RESTOCKING_ALERT,
       },
       [MedicineStatus.LOW_STOCK]: {
         title: '⚠️ Alerta de bajo stock',
