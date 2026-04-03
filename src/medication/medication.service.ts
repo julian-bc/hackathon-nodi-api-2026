@@ -7,8 +7,31 @@ import { GlobalHttpException } from "src/common/exceptions/GlobalHttp.exception"
 export class MedicationService {
   constructor(private readonly repository: MedicationRepository) {}
 
-  async findMedications(): Promise<Medication[]> {
-    return this.repository.findAll();
+  async findMedications(options: { page: number; limit: number; name?: string }) {
+    const { page, limit, name } = options;
+
+    const filter: any = {};
+    if (name) {
+      filter.name = { $regex: name, $options: 'i' };
+    }
+
+    const totalItems = await this.repository.count(filter);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const items = await this.repository.find(filter, {
+      skip: (page - 1) * limit,
+      limit,
+    });
+
+    return {
+      items,
+      meta: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        pageSize: limit,
+      },
+    };
   }
 
   async findMedication(id: string): Promise<Medication> {

@@ -28,10 +28,7 @@ export class Medication {
 
   @Prop({ required: true })
   price!: number;
-
-  @Prop({ required: true })
-  expiresOn!: Date;
-
+  
   @Prop()
   laboratory?: string;
 

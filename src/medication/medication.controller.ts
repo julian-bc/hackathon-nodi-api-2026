@@ -5,18 +5,24 @@ import {
   Put, 
   Delete, 
   Param, 
-  Body 
+  Body, 
+  Query
 } from '@nestjs/common';
 import { MedicationService } from './medication.service';
 import { Medication } from './schema/medications.schema';
+import { PaginatedResult } from 'src/common/interfaces/interfaces';
 
 @Controller('medications')
 export class MedicationController {
   constructor(private readonly service: MedicationService) {}
 
   @Get()
-  async findAll(): Promise<Medication[]> {
-    return this.service.findMedications();
+  async findAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('name') name?: string,
+  ): Promise<PaginatedResult<Medication>> {
+    return this.service.findMedications({ page, limit, name });
   }
 
   @Get(':id')

@@ -10,8 +10,16 @@ export class MedicationRepository {
     private readonly medicationModel: Model<MedicationDocument>,
   ) {}
 
-  async findAll(): Promise<Medication[]> {
-    return this.medicationModel.find().exec();
+  async find(filter: any, options: { skip: number; limit: number }): Promise<Medication[]> {
+    return this.medicationModel
+      .find(filter)
+      .skip(options.skip)
+      .limit(options.limit)
+      .exec();
+  }
+
+  async count(filter: any): Promise<number> {
+    return this.medicationModel.countDocuments(filter).exec();
   }
 
   async findById(id: string): Promise<Medication | null> {
