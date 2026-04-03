@@ -77,10 +77,7 @@ export class UserController {
     @Param('id') id: string,
     @Body() verifyCodeDto: VerifyCodeDto,
   ) {
-    return await this.userService.verifyEmailChangeCode(
-      id,
-      verifyCodeDto.code,
-    );
+    return await this.userService.verifyEmailChangeCode(id, verifyCodeDto.code);
   }
 
   @Put(':id')

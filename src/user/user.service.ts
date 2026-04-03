@@ -69,7 +69,9 @@ export class UserService {
     return user;
   }
 
-  async createUser(createUserDto: CreateUserDto): Promise<{ message: string }> {
+  async createUser(
+    createUserDto: CreateUserDto,
+  ): Promise<{ message: string; user: any }> {
     const existingUserByEmail = await this.userModel.findOne({
       email: createUserDto.email,
     });
@@ -107,7 +109,7 @@ export class UserService {
       this.saltRounds,
     );
 
-    await this.userModel.create({
+    const newUser: User = await this.userModel.create({
       ...createUserDto,
       password: hashedPassword,
       isEmailVerified: false,
@@ -130,6 +132,15 @@ export class UserService {
     return {
       message:
         'User created successfully. A verification code was sent to the email.',
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        documentType: newUser.documentType,
+        documentNumber: newUser.documentNumber,
+        phone: newUser.phone,
+        role: newUser.role,
+      },
     };
   }
 

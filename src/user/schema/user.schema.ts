@@ -4,7 +4,7 @@ import { DocumentTypes, UserRoles } from '../types/user.types';
 
 export type UserDocument = HydratedDocument<User>;
 
-@Schema({ _id: false })
+@Schema()
 export class VerificationData {
   @Prop({ required: true, select: false })
   codeHash: string;
@@ -24,6 +24,8 @@ export const VerificationDataSchema =
 
 @Schema({ timestamps: true, versionKey: false })
 export class User {
+  _id: string;
+
   @Prop({ required: true, trim: true })
   name: string;
 
@@ -54,7 +56,7 @@ export class User {
   @Prop({ type: VerificationDataSchema, default: null })
   registrationVerification?: VerificationData | null;
 
-  @Prop({ default: null, lowercase: true, trim: true })
+  @Prop({ type: String, default: null, lowercase: true, trim: true })
   pendingEmail?: string | null;
 
   @Prop({ type: VerificationDataSchema, default: null })

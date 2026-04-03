@@ -10,12 +10,12 @@ import { MailService } from './mail.service';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         transport: {
-          host: configService.get<string>('smtp.host'),
-          port: configService.get<number>('smtp.port'),
+          host: configService.get<string>('MAIL_HOST'),
+          port: configService.get<number>('MAIL_PORT'),
           secure: false,
           auth: {
-            user: configService.get<string>('smtp.user'),
-            pass: configService.get<string>('smtp.pass'),
+            user: configService.get<string>('MAIL_USER'),
+            pass: configService.get<string>('MAIL_PASS'),
           },
         },
         defaults: {
