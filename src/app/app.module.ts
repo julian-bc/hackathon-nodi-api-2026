@@ -5,6 +5,8 @@ import databaseConfig from 'src/config/database.config';
 import jwtConfig from 'src/config/jwt.config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { validate } from 'src/config/env.validate';
+import { BullModule } from '@nestjs/bullmq';
+import { NotificationsModule } from 'src/modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -21,6 +23,10 @@ import { validate } from 'src/config/env.validate';
         uri: configService.get<string>('database.uri'),
       }),
     }),
+    BullModule.forRoot({
+      connection: { host: 'localhost', port: 6379 }
+    }),
+    NotificationsModule,
   ],
 })
 export class AppModule {}
