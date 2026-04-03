@@ -6,7 +6,8 @@ import {
   Delete, 
   Param, 
   Body, 
-  Query
+  Query,
+  Patch
 } from '@nestjs/common';
 import { MedicationService } from './medication.service';
 import { Medication } from './schema/medications.schema';
@@ -21,8 +22,14 @@ export class MedicationController {
     @Query('page') page = 1,
     @Query('limit') limit = 10,
     @Query('name') name?: string,
+    @Query('status') status?: "active" | "low-stock" | "out-of-stock",
   ): Promise<PaginatedResult<Medication>> {
-    return this.service.findMedications({ page, limit, name });
+    return this.service.findMedications({ 
+      page,
+      limit,
+      name,
+      status
+    });
   }
 
   @Get(':id')
@@ -41,6 +48,30 @@ export class MedicationController {
     @Body() body: Partial<Medication>
   ): Promise<Medication | null> {
     return this.service.updateMedication(id, body);
+  }
+
+  @Patch(':id/stock')
+  async updateStock(
+    @Param('id') id: string,
+    @Body('quantity') quantity: number
+  ): Promise<Medication | null> {
+    return this.service.registerStock(id, quantity);
+  }
+
+  @Patch(':id/min-stock')
+  async updateMinStock(
+    @Param('id') id: string,
+    @Body('minStock') minStock: number
+  ): Promise<Medication | null> {
+    return this.service.updateMinStock(id, minStock);
+  }
+
+  @Patch(':id/committed-stock')
+  async updateCommittedStock(
+    @Param('id') id: string,
+    @Body('quantity') quantity: number
+  ): Promise<Medication | null> {
+    return this.service.updateCommittedStock(id, quantity);
   }
 
   @Delete(':id')
