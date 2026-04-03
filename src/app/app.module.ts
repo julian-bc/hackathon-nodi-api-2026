@@ -5,6 +5,7 @@ import databaseConfig from 'src/config/database.config';
 import jwtConfig from 'src/config/jwt.config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { validate } from 'src/config/env.validate';
+import { MedicationModule } from 'src/medication/medication.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { validate } from 'src/config/env.validate';
         uri: configService.get<string>('database.uri'),
       }),
     }),
+    MedicationModule
   ],
 })
 export class AppModule {}
