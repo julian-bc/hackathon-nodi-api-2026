@@ -6,6 +6,7 @@ import jwtConfig from 'src/config/jwt.config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { validate } from 'src/config/env.validate';
 import { MedicationModule } from 'src/medication/medication.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { MedicationModule } from 'src/medication/medication.module';
         uri: configService.get<string>('database.uri'),
       }),
     }),
-    MedicationModule
+    MedicationModule,
+    UserModule,
   ],
 })
 export class AppModule {}
