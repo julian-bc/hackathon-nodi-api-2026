@@ -19,7 +19,7 @@ services:
     image: mongo:latest
     container_name: coraje-database
     ports:
-      - "27018:27017"
+      - "27017:27017"
     env_file:
       - ./.env
     environment:
@@ -31,6 +31,7 @@ services:
     
   redis:
     image: redis:7-alpine
+    container_name: "coraje-redis"
     ports:
       - '6379:6379'
       

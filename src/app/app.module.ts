@@ -26,7 +26,7 @@ import { UserModule } from 'src/user/user.module';
       }),
     }),
     BullModule.forRoot({
-      connection: { host: 'localhost', port: 6379 }
+      connection: { host: 'redis', port: 6379 }
     }),
     NotificationsModule,
     MedicationModule,
