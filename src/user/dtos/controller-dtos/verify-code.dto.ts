@@ -6,5 +6,5 @@ export class VerifyCodeDto {
   @Matches(/^\d{6}$/, {
     message: 'Code must contain exactly 6 digits',
   })
-  code: string;
+  code!: string;
 }
