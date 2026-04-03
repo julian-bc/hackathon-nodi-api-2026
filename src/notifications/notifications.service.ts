@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { Notification, NotificationChannel, NotificationDocument, NotificationType } from './schema/notificacion.schema';
+import { Notification, NotificationDocument } from './schema/notificacion.schema';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { MarkReadDto } from './dto/mark-read.dto';
 import { MedicineStatus, StockChangeNotificationDto } from './dto/stock-change-notificaction.dto';
+import { NotificationsProcessor } from './notifications.processor';
+import { NotificationChannel, NotificationType } from './schema/notificacion.schema';
 
-// Interfaces para conectarse con otros módulos
 export interface WishlistUser {
   userId: string;
   email?: string;
@@ -26,20 +25,13 @@ export interface BranchWorker {
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
-    @InjectQueue('notifications') private notificationsQueue: Queue,
+    private readonly processor: NotificationsProcessor,
   ) {}
 
-  // ─── Método principal que otros módulos llaman ───────────────────────────
+  async send(dto: CreateNotificationDto): Promise<void> {
+    await this.processor.processNotification(dto);
+  }
 
-  /**
-   * Llamar este método cuando el stock de un medicamento cambie.
-   * 
-   * @param dto - datos del cambio de stock
-   * @param wishlistUsers - usuarios que tienen este medicamento en su wishlist
-   *                        (el módulo de wishlist debe proveer esta lista)
-   * @param branchWorkers - trabajadores/admins asignados a la sede
-   *                        (el módulo de usuarios debe proveer esta lista)
-   */
   async notifyStockChange(
     dto: StockChangeNotificationDto,
     wishlistUsers: WishlistUser[],
@@ -47,7 +39,6 @@ export class NotificationsService {
   ): Promise<void> {
     const { medicineName, branchName, newStatus } = dto;
 
-    // Mensajes según el nuevo estado
     const patientMessages: Record<MedicineStatus, { title: string; message: string; type: NotificationType }> = {
       [MedicineStatus.AVAILABLE]: {
         title: '✅ Medicamento disponible',
@@ -97,7 +88,6 @@ export class NotificationsService {
     const patientContent = patientMessages[newStatus];
     const workerContent = workerMessages[newStatus];
 
-    // Notificar a pacientes/cuidadores con ese medicamento en wishlist
     const patientJobs = wishlistUsers.map((user) =>
       this.send({
         userId: user.userId,
@@ -115,7 +105,6 @@ export class NotificationsService {
       }),
     );
 
-    // Notificar a trabajadores/admins de la sede
     const workerJobs = branchWorkers.map((worker) =>
       this.send({
         userId: worker.userId,
@@ -133,18 +122,6 @@ export class NotificationsService {
 
     await Promise.all([...patientJobs, ...workerJobs]);
   }
-
-  // ─── Cola ────────────────────────────────────────────────────────────────
-
-  async send(dto: CreateNotificationDto): Promise<void> {
-    await this.notificationsQueue.add('send-notification', dto, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: true,
-    });
-  }
-
-  // ─── Endpoints del centro de notificaciones ──────────────────────────────
 
   async getByUser(userId: string) {
     return this.notificationModel

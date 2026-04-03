@@ -5,8 +5,7 @@ import databaseConfig from 'src/config/database.config';
 import jwtConfig from 'src/config/jwt.config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { validate } from 'src/config/env.validate';
-import { BullModule } from '@nestjs/bullmq';
-import { NotificationsModule } from 'src/modules/notifications/notifications.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 import { MedicationModule } from 'src/medication/medication.module';
 import { UserModule } from 'src/user/user.module';
 
@@ -24,9 +23,6 @@ import { UserModule } from 'src/user/user.module';
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('database.uri'),
       }),
-    }),
-    BullModule.forRoot({
-      connection: { host: 'redis', port: 6379 }
     }),
     NotificationsModule,
     MedicationModule,

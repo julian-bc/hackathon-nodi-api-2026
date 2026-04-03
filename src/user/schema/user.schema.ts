@@ -7,16 +7,16 @@ export type UserDocument = HydratedDocument<User>;
 @Schema()
 export class VerificationData {
   @Prop({ required: true, select: false })
-  codeHash: string;
+  codeHash!: string;
 
   @Prop({ required: true })
-  expiresAt: Date;
+  expiresAt!: Date;
 
   @Prop({ default: 0 })
-  attempts: number;
+  attempts!: number;
 
   @Prop({ default: Date.now })
-  requestedAt: Date;
+  requestedAt!: Date;
 }
 
 export const VerificationDataSchema =
@@ -24,34 +24,34 @@ export const VerificationDataSchema =
 
 @Schema({ timestamps: true, versionKey: false })
 export class User {
-  _id: string;
+  _id!: string;
 
   @Prop({ required: true, trim: true })
-  name: string;
+  name!: string;
 
   @Prop({ required: true, min: 0 })
-  age: number;
+  age!: number;
 
   @Prop({ required: true, enum: DocumentTypes })
-  documentType: DocumentTypes;
+  documentType!: DocumentTypes;
 
   @Prop({ required: true, unique: true })
-  documentNumber: number;
+  documentNumber!: number;
 
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
-  email: string;
+  email!: string;
 
   @Prop({ required: true, select: false })
-  password: string;
+  password!: string;
 
   @Prop({ required: true })
-  phone: number;
+  phone!: number;
 
   @Prop({ required: true, enum: UserRoles })
-  role: UserRoles;
+  role!: UserRoles;
 
   @Prop({ default: false })
-  isEmailVerified: boolean;
+  isEmailVerified!: boolean;
 
   @Prop({ type: VerificationDataSchema, default: null })
   registrationVerification?: VerificationData | null;
@@ -62,8 +62,8 @@ export class User {
   @Prop({ type: VerificationDataSchema, default: null })
   emailChangeVerification?: VerificationData | null;
 
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
