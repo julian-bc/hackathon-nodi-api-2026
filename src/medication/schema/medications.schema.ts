@@ -14,8 +14,13 @@ export class Medication {
   @Prop({ required: true })
   category!: string;
 
-  @Prop({ required: true})
-  status!: string;
+  /**
+   * active         -> medicamento disponible y con stock suficiente
+   * low-stock      -> stock disponible ≤ minStock (alerta)
+   * out-of-stock   -> stock físico = 0
+   */
+  @Prop({ default: "active" })
+  status!: "active" | "low-stock" | "out-of-stock";
 
   @Prop({ required: true })
   dose!: string;
@@ -25,6 +30,15 @@ export class Medication {
 
   @Prop({ required: true })
   stock!: number;
+
+  @Prop({ required: true })
+  minStock!: number;
+
+  @Prop()
+  committedStock!: number;
+
+  @Prop({ type: Date, default: null })
+  repositionDate?: Date | null;
 
   @Prop({ required: true })
   price!: number;
