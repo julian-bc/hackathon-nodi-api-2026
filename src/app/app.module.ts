@@ -8,6 +8,7 @@ import { validate } from 'src/config/env.validate';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { MedicationModule } from 'src/medication/medication.module';
 import { UserModule } from 'src/user/user.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UserModule } from 'src/user/user.module';
     NotificationsModule,
     MedicationModule,
     UserModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
