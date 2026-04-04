@@ -83,6 +83,7 @@ export class MedicationService {
     return this.repository.create({
       ...data,
       committedStock: 0,
+      incomingStock: 50,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -94,7 +95,8 @@ export class MedicationService {
     if (
       data.stock !== undefined ||
       data.minStock !== undefined ||
-      data.committedStock !== undefined
+      data.committedStock !== undefined ||
+      data.reservedIncomingStock !== undefined
     ) {
       throw new GlobalHttpException(
         "Los valores de stock deben actualizarse mediante sus endpoints específicos.",
@@ -169,13 +171,38 @@ export class MedicationService {
   }
 
   async deleteMedication(id: string): Promise<boolean> {
-    await this.findMedication(id);
+    const medication = await this.findMedication(id);
+
+    if (medication.stock !== 0 &&
+      medication.committedStock !== 0 &&
+      medication.incomingStock !== 0 &&
+      medication.reservedIncomingStock !== 0
+    ) {
+      return false;
+    }
+
     await this.repository.delete(id);
     return true;
   }
 
+  async processInventoryMovement(id: string, quantity: number, type: 'immediate' | 'next-shipment'): Promise<void> {
+    const med = await this.findMedication(id);
+    const updates: any = { updatedAt: new Date() };
+
+    if (type === "immediate") {
+      updates.stock = med.stock - quantity;
+    } 
+    else if (type === "next-shipment") {
+      updates.reservedIncomingStock = (med.reservedIncomingStock || 0) + quantity;
+    }
+
+    const finalStock = updates.stock !== undefined ? updates.stock : med.stock;
+    updates.status = this.calculateStatus(finalStock, med.minStock);
+    await this.repository.update(id, updates);
+  }
+
   private calculateStatus(stock: number, minStock: number) {
-    if (stock === 0) return "out-of-stock";
+    if (stock <= 0) return "out-of-stock";
     if (stock <= minStock) return "low-stock";
     return "active";
   }

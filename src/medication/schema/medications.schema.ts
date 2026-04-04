@@ -37,6 +37,12 @@ export class Medication {
   @Prop()
   committedStock!: number;
 
+  @Prop()
+  incomingStock!: number;
+
+  @Prop()
+  reservedIncomingStock!: number;
+
   @Prop({ type: Date, default: null })
   repositionDate?: Date | null;
 
