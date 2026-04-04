@@ -6,7 +6,7 @@ import { User, UserSchema } from './schema/user.schema';
 import { MailModule } from 'src/mail/mail.module';
 
 @Module({
-  exports: [],
+  exports: [UserService],
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     MailModule,
