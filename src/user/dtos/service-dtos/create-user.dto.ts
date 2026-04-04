@@ -12,28 +12,28 @@ import { DocumentTypes, UserRoles } from '../../types/user.types';
 export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsInt()
   @Min(0)
-  age: number;
+  age!: number;
 
   @IsEnum(DocumentTypes)
-  documentType: DocumentTypes;
+  documentType!: DocumentTypes;
 
   @IsNumber()
-  documentNumber: number;
+  documentNumber!: number;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  password: string;
+  password!: string;
 
   @IsNumber()
-  phone: number;
+  phone!: number;
 
   @IsEnum(UserRoles)
-  role: UserRoles;
+  role!: UserRoles;
 }

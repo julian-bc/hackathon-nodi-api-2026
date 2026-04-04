@@ -1,5 +1,3 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -8,9 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import { Notification, NotificationChannel, NotificationDocument } from './schema/notificacion.schema';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 
-@Processor('notifications')
 @Injectable()
-export class NotificationsProcessor extends WorkerHost {
+export class NotificationsProcessor {
   private readonly logger = new Logger(NotificationsProcessor.name);
   private transporter: nodemailer.Transporter;
 
@@ -18,9 +15,6 @@ export class NotificationsProcessor extends WorkerHost {
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
     private readonly configService: ConfigService,
   ) {
-    super();
-
-    // Nodemailer
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('MAIL_HOST'),
       port: this.configService.get<number>('MAIL_PORT'),
@@ -31,11 +25,10 @@ export class NotificationsProcessor extends WorkerHost {
     });
   }
 
-  async process(job: Job<CreateNotificationDto>): Promise<void> {
-    const data = job.data;
-    this.logger.log(`Procesando notificación [${job.name}] para usuario ${data.userId}`);
+  async processNotification(data: CreateNotificationDto): Promise<void> {
+    this.logger.log(`Procesando notificación para usuario ${data.userId}`);
 
-    // 1. Guardar en DB (in-app siempre)
+    // 1. Guardar en DB
     await this.notificationModel.create({
       userId: data.userId,
       title: data.title,
@@ -86,16 +79,16 @@ export class NotificationsProcessor extends WorkerHost {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
-        },
+        } as HeadersInit,
         body: JSON.stringify({
-          number: data.phone,   // ej: 573001234567
+          number: data.phone,
           message: `*${data.title}*\n${data.message}`,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error ?? 'Error desconocido del bot');
+        throw new Error((error as { error?: string }).error ?? 'Error desconocido del bot');
       }
 
       this.logger.log(`WhatsApp enviado a ${data.phone}`);

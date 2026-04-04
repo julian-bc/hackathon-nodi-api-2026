@@ -5,10 +5,10 @@ import databaseConfig from 'src/config/database.config';
 import jwtConfig from 'src/config/jwt.config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { validate } from 'src/config/env.validate';
-import { BullModule } from '@nestjs/bullmq';
-import { NotificationsModule } from 'src/modules/notifications/notifications.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 import { MedicationModule } from 'src/medication/medication.module';
 import { UserModule } from 'src/user/user.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
@@ -25,12 +25,10 @@ import { UserModule } from 'src/user/user.module';
         uri: configService.get<string>('database.uri'),
       }),
     }),
-    BullModule.forRoot({
-      connection: { host: 'localhost', port: 6379 }
-    }),
     NotificationsModule,
     MedicationModule,
     UserModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
