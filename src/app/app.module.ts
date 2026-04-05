@@ -9,12 +9,13 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
 import { MedicationModule } from 'src/medication/medication.module';
 import { UserModule } from 'src/user/user.module';
 import { AuthModule } from 'src/auth/auth.module';
+import cloudinaryConfig from 'src/config/cloudinary.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig],
+      load: [appConfig, databaseConfig, jwtConfig, cloudinaryConfig],
       cache: true,
       validate,
     }),
