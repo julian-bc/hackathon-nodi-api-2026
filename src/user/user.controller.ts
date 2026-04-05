@@ -6,9 +6,12 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseFilePipeBuilder,
   Patch,
   Post,
   Put,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dtos/service-dtos/create-user.dto';
@@ -16,6 +19,7 @@ import { UpdateUserDto } from './dtos/service-dtos/update-user.dto';
 import { VerifyCodeDto } from './dtos/controller-dtos/verify-code.dto';
 import { RequestEmailChangeDto } from './dtos/controller-dtos/request-email-change.dto';
 import { UserRoles } from './types/user.types';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 export class UserController {
@@ -99,5 +103,27 @@ export class UserController {
   @Delete(':id')
   async deleteUser(@Param('id') id: string) {
     return await this.userService.deleteUser(id);
+  }
+
+  @Post(':id/profile-picture')
+  @UseInterceptors(FileInterceptor('profilePicture'))
+  async uploadProfilePicture(
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({
+          fileType: /(jpg|jpeg|png|webp)$/i,
+        })
+        .addMaxSizeValidator({
+          maxSize: 5 * 1024 * 1024,
+        })
+        .build({
+          fileIsRequired: true,
+          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return await this.userService.uploadProfilePicture(id, file);
   }
 }

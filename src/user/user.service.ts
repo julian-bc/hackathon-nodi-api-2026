@@ -12,6 +12,7 @@ import { UserRoles } from './types/user.types';
 import { GlobalHttpException } from 'src/common/exceptions/GlobalHttp.exception';
 import jwtConfig from 'src/config/jwt.config';
 import { MailService } from 'src/mail/mail.service';
+import { CloudinaryService } from 'src/common/cloudinary/cloudinary.service';
 
 @Injectable()
 export class UserService {
@@ -21,6 +22,7 @@ export class UserService {
     @Inject(jwtConfig.KEY)
     private readonly jwtEnvs: ConfigType<typeof jwtConfig>,
     private readonly mailService: MailService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   private get saltRounds(): number {
@@ -427,9 +429,11 @@ export class UserService {
     }
 
     if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(
-        updateUserDto.password,
-        this.saltRounds,
+      throw new GlobalHttpException(
+        'Direct passwords updates are not allowed. Use the password change verification flow.',
+        {
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
       );
     }
 
@@ -482,9 +486,11 @@ export class UserService {
     }
 
     if (partialData.password) {
-      partialData.password = await bcrypt.hash(
-        partialData.password,
-        this.saltRounds,
+      throw new GlobalHttpException(
+        'Direct passwords updates are not allowed. Use the password change verification flow.',
+        {
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
       );
     }
 
@@ -533,6 +539,52 @@ export class UserService {
 
     return {
       message: `User with id ${id} deleted successfully`,
+    };
+  }
+
+  async uploadProfilePicture(
+    id: string,
+    file: Express.Multer.File,
+  ): Promise<{ message: string; profilePictureUrl: string }> {
+    await this.validateUserId(id);
+
+    if (!file?.buffer) {
+      throw new GlobalHttpException('No profile picture file was provided', {
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    const user = await this.userModel
+      .findById(id)
+      .select('+profilePicturePublicId');
+
+    if (!user) {
+      throw new GlobalHttpException(`User with id ${id} not found`, {
+        statusCode: HttpStatus.NOT_FOUND,
+      });
+    }
+
+    const hadProfilePicture = Boolean(user.profilePicturePublicId);
+
+    const publicId =
+      user.profilePicturePublicId ??
+      `users/${user._id.toString()}/profile-picture`;
+
+    const uploadResult = await this.cloudinaryService.uploadToCloudinary(
+      file,
+      publicId,
+    );
+
+    user.profilePictureUrl = uploadResult.secure_url;
+    user.profilePicturePublicId = uploadResult.public_id;
+
+    await user.save();
+
+    return {
+      message: hadProfilePicture
+        ? 'Profile picture updated successfully'
+        : 'Profile picture uploaded successfully',
+      profilePictureUrl: user.profilePictureUrl,
     };
   }
 }
