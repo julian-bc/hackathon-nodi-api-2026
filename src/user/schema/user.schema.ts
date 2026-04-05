@@ -62,6 +62,12 @@ export class User {
   @Prop({ type: VerificationDataSchema, default: null })
   emailChangeVerification?: VerificationData | null;
 
+  @Prop({ type: String, default: null })
+  profilePictureUrl?: string | null;
+
+  @Prop({ type: String, default: null, select: false })
+  profilePicturePublicId?: string | null;
+
   createdAt!: Date;
   updatedAt!: Date;
 }
