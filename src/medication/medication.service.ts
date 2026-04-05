@@ -58,33 +58,46 @@ export class MedicationService {
   }
 
   async createMedication(data: Partial<Medication>): Promise<Medication> {
-    const exists = await this.repository.exists(data);
 
-    if(exists) {
-      throw new GlobalHttpException(
-        `Medicamento ${data.name} con misma dosis/presentación ya existente.`,
-        { statusCode: 409 },
-      );
-    }
+  if (
+    data.committedStock !== undefined ||
+    data.incomingStock !== undefined ||
+    data.reservedIncomingStock !== undefined
+  ) {
+    throw new GlobalHttpException(
+      "No está permitido enviar campos de inventario en la creación.",
+      { statusCode: 400 }
+    );
+  }
 
-    if (data.stock !== undefined && data.stock < 0) {
-      throw new GlobalHttpException(
-        "El stock no puede ser negativo.",
-        { statusCode: 409 },
-      );
-    }
+  const exists = await this.repository.exists(data);
 
-    if (data.minStock !== undefined && data.minStock < 0) {
-      throw new GlobalHttpException(
-        "El stock mínimo no puede ser negativo.",
-        { statusCode: 409 },
-      );
-    }
+  if (exists) {
+    throw new GlobalHttpException(
+      `Medicamento ${data.name} con misma dosis/presentación ya existente.`,
+      { statusCode: 409 },
+    );
+  }
+
+  if (data.stock !== undefined && data.stock < 0) {
+    throw new GlobalHttpException(
+      "El stock no puede ser negativo.",
+      { statusCode: 409 },
+    );
+  }
+
+  if (data.minStock !== undefined && data.minStock < 0) {
+    throw new GlobalHttpException(
+      "El stock mínimo no puede ser negativo.",
+      { statusCode: 409 },
+    );
+  }
 
     return this.repository.create({
       ...data,
       committedStock: 0,
       incomingStock: 0,
+      reservedIncomingStock: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -102,6 +115,15 @@ export class MedicationService {
       throw new GlobalHttpException(
         "Los valores de stock deben actualizarse mediante sus endpoints específicos.",
         { statusCode: 409 },
+      );
+    }
+
+    const validStatus = ["active", "low-stock", "out-of-stock"];
+
+    if (data.status !== undefined && !validStatus.includes(data.status)) {
+      throw new GlobalHttpException(
+        `Estado inválido. Solo se permite: ${validStatus.join(", ")}`,
+        { statusCode: 400 }
       );
     }
 
@@ -173,31 +195,53 @@ export class MedicationService {
     });
   }
 
-  // async updateCommittedStock(id: string, quantity: number): Promise<Medication | null> {
-  //   const medication = await this.findMedication(id);
+   async updateCommittedStock(id: string, quantity: number): Promise<Medication | null> {
+    const medication = await this.findMedication(id);
 
-  //   const newCommitted = medication.committedStock + quantity;
-    
-  //   if (newCommitted < 0) {
-  //     throw new GlobalHttpException(
-  //       "El stock comprometido no puede ser negativo.",
-  //       { statusCode: 409 },
-  //     );
-  //   }
+    if (quantity === 0) return medication;
 
-  //   let newStock = medication.stock - quantity;
+    const newCommitted = medication.committedStock + quantity;
 
-  //   if (newStock < 0) {
-  //     newStock = 0;
-  //   }
+    if (newCommitted < 0) {
+      throw new GlobalHttpException(
+        "El stock comprometido no puede ser negativo.",
+        { statusCode: 409 },
+      );
+    }
 
-  //   return this.repository.update(id, {
-  //     committedStock: newCommitted,
-  //     stock: newStock,
-  //     status: this.calculateStatus(newStock, medication.minStock),
-  //     updatedAt: new Date(),
-  //   });
-  // }
+    let newStock = medication.stock;
+
+    // 🔥 CASO 1: RESERVAR (quantity > 0)
+    if (quantity > 0) {
+      if (medication.stock === 0) {
+        throw new GlobalHttpException(
+          "No hay stock disponible para comprometer.",
+          { statusCode: 409 },
+        );
+      }
+
+      if (quantity > medication.stock) {
+        throw new GlobalHttpException(
+          `Stock insuficiente. Disponible: ${medication.stock}`,
+          { statusCode: 409 },
+        );
+      }
+
+      newStock = medication.stock - quantity;
+    }
+
+    // 🔥 CASO 2: DEVOLVER (quantity < 0)
+    if (quantity < 0) {
+      newStock = medication.stock + Math.abs(quantity);
+    }
+
+    return this.repository.update(id, {
+      committedStock: newCommitted,
+      stock: newStock,
+      status: this.calculateStatus(newStock, medication.minStock),
+      updatedAt: new Date(),
+    });
+  }
 
   async deleteMedication(id: string): Promise<boolean> {
     const medication = await this.findMedication(id);
