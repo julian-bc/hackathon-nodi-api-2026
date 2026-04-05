@@ -12,7 +12,7 @@ async function bootstrap() {
   const frontendUrl = configService.get<string>('FRONTEND_URL');
 
   app.enableCors({
-    origin: frontendUrl ?? 'http://localhost:5713',
+    origin: frontendUrl ?? 'http://localhost:5173',
     credentials: true,
     allowedHeaders: 'Content-Type, Accept',
   });
