@@ -1,9 +1,8 @@
 import { IsString, IsEnum } from "class-validator";
 
 export enum MedicineStatus {
-    AVAILABLE = 'AVAILABLE',
+    ACTIVE = 'ACTIVE',
     OUT_OF_STOCK = 'OUT_OF_STOCK',
-    RESTOCKING = 'RESTOCKING',
     LOW_STOCK = 'LOW_STOCK',
 }
 

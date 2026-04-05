@@ -1,0 +1,26 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v2
+        with:
+          ref: feature/test-deploy
+
+      - name: Executing remote SSH commadns
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/projects/coraje-server
+            git pull origin feature/test-deploy
+            docker compose down
+            docker compose up -d --build
