@@ -6,5 +6,6 @@ export class ICreateTicketDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateTicketItemDto)
+  customerId!: string;
   products!: CreateTicketItemDto[];
 }

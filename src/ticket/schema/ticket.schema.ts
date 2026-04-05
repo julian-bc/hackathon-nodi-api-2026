@@ -42,10 +42,10 @@ export class Ticket {
 
   @Prop({ 
     required: true, 
-    enum: ["completed", "partially-completed", "waiting"],
+    enum: ["completed", "partially-completed", "waiting", "registered"],
     default: "completed" 
   })
-  status!: "completed" | "partially-completed" | "waiting";
+  status!: "completed" | "partially-completed" | "waiting" | "registered";
 
   @Prop({ type: [String], default: [] })
   observations!: string[];

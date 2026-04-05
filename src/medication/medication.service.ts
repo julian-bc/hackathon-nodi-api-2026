@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Medication } from "./schema/medications.schema";
 import { MedicationRepository } from "./medication.repository";
 import { GlobalHttpException } from "src/common/exceptions/GlobalHttp.exception";
+import databaseConfig from "src/config/database.config";
 
 @Injectable()
 export class MedicationService {
@@ -83,14 +84,14 @@ export class MedicationService {
     return this.repository.create({
       ...data,
       committedStock: 0,
-      incomingStock: 50,
+      incomingStock: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
   }
 
   async updateMedication(id: string, data: Partial<Medication>): Promise<Medication | null> {    
-    await this.findMedication(id);
+    const currentMed = await this.findMedication(id);
    
     if (
       data.stock !== undefined ||
@@ -101,6 +102,34 @@ export class MedicationService {
       throw new GlobalHttpException(
         "Los valores de stock deben actualizarse mediante sus endpoints específicos.",
         { statusCode: 409 },
+      );
+    }
+
+    // Obtenemos los valores finales (lo nuevo o lo que ya estaba en DB)
+    const finalIncomingStock = data.incomingStock !== undefined ? data.incomingStock : currentMed.incomingStock;
+    const finalRepositionDate = data.repositionDate !== undefined ? data.repositionDate : currentMed.repositionDate;
+
+    // CASO A: Intentan bajar el stock por debajo de lo que ya prometimos a pacientes
+    if (data.incomingStock !== undefined && data.incomingStock < (currentMed.reservedIncomingStock || 0)) {
+      throw new GlobalHttpException(
+        `Conflicto de Reservas: No puedes bajar el pedido a ${data.incomingStock} porque ya hay ${currentMed.reservedIncomingStock} unidades reservadas.`,
+        { statusCode: 409 },
+      );
+    }
+
+    // CASO B: Hay cantidad pero NO hay fecha
+    if (finalIncomingStock > 0 && !finalRepositionDate) {
+      throw new GlobalHttpException(
+        "Error de Logística: Si hay cantidad en el próximo envío, es obligatorio definir la fecha de reposición (repositionDate).",
+        { statusCode: 400 },
+      );
+    }
+
+    // CASO C: Hay fecha pero NO hay cantidad (o es 0)
+    if (finalRepositionDate && (!finalIncomingStock || finalIncomingStock <= 0)) {
+      throw new GlobalHttpException(
+        "Error de Logística: No puedes asignar una fecha de reposición si el stock de próximo envío es 0.",
+        { statusCode: 400 },
       );
     }
 
@@ -144,31 +173,31 @@ export class MedicationService {
     });
   }
 
-  async updateCommittedStock(id: string, quantity: number): Promise<Medication | null> {
-    const medication = await this.findMedication(id);
+  // async updateCommittedStock(id: string, quantity: number): Promise<Medication | null> {
+  //   const medication = await this.findMedication(id);
 
-    const newCommitted = medication.committedStock + quantity;
+  //   const newCommitted = medication.committedStock + quantity;
     
-    if (newCommitted < 0) {
-      throw new GlobalHttpException(
-        "El stock comprometido no puede ser negativo.",
-        { statusCode: 409 },
-      );
-    }
+  //   if (newCommitted < 0) {
+  //     throw new GlobalHttpException(
+  //       "El stock comprometido no puede ser negativo.",
+  //       { statusCode: 409 },
+  //     );
+  //   }
 
-    let newStock = medication.stock - quantity;
+  //   let newStock = medication.stock - quantity;
 
-    if (newStock < 0) {
-      newStock = 0;
-    }
+  //   if (newStock < 0) {
+  //     newStock = 0;
+  //   }
 
-    return this.repository.update(id, {
-      committedStock: newCommitted,
-      stock: newStock,
-      status: this.calculateStatus(newStock, medication.minStock),
-      updatedAt: new Date(),
-    });
-  }
+  //   return this.repository.update(id, {
+  //     committedStock: newCommitted,
+  //     stock: newStock,
+  //     status: this.calculateStatus(newStock, medication.minStock),
+  //     updatedAt: new Date(),
+  //   });
+  // }
 
   async deleteMedication(id: string): Promise<boolean> {
     const medication = await this.findMedication(id);
@@ -198,6 +227,22 @@ export class MedicationService {
 
     const finalStock = updates.stock !== undefined ? updates.stock : med.stock;
     updates.status = this.calculateStatus(finalStock, med.minStock);
+    await this.repository.update(id, updates);
+  }
+
+  async revertInventoryMovement (id: string, quantity: number, type: 'immediate' | 'next-shipment'): Promise<void> {
+    const med = await this.findMedication(id);
+    const updates: any = { updatedAt: new Date() };
+
+    if (type === 'immediate') {
+      updates.stock = med.stock + quantity;
+    } 
+    else if (type === 'next-shipment') {
+      updates.reservedIncomingStock = Math.max(0, (med.reservedIncomingStock || 0) - quantity);
+    }
+
+    const finalPhysicalStock = updates.stock !== undefined ? updates.stock : med.stock;
+    updates.status = this.calculateStatus(finalPhysicalStock, med.minStock);
     await this.repository.update(id, updates);
   }
 
