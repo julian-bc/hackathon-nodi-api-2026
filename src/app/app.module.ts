@@ -30,8 +30,8 @@ import cloudinaryConfig from 'src/config/cloudinary.config';
     NotificationsModule,
     MedicationModule,
     UserModule,
-    TicketModule
     AuthModule,
+    TicketModule
   ],
 })
 export class AppModule {}
