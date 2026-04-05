@@ -6,7 +6,7 @@ import { Medication, MedicationSchema } from "./schema/medications.schema";
 import { MedicationRepository } from "./medication.repository";
 
 @Module({
-  exports: [],
+  exports: [MedicationService],
   imports: [
     MongooseModule.forFeature([{ name: Medication.name, schema: MedicationSchema }]),
   ],
