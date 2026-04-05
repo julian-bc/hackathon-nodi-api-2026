@@ -7,24 +7,19 @@ on:
         description: 'Branch to deploy'
         required: true
         type: string
-        default: 'feature/test-deploy'
+        default: 'main'
       
       folder-name:
         description: 'Folder name on the server'
         required: true
         type: string
-        default: '~/projects/coraje-server'
+        default: 'projects/coraje-server'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Branch
-        uses: actions/checkout@v2
-        with:
-          ref: feature/test-deploy
-
       - name: Executing remote SSH commadns
         uses: appleboy/ssh-action@master
         with:
