@@ -66,13 +66,13 @@ export class MedicationController {
     return this.service.updateMinStock(id, minStock);
   }
 
-  @Patch(':id/committed-stock')
-  async updateCommittedStock(
-    @Param('id') id: string,
-    @Body('quantity') quantity: number
-  ): Promise<Medication | null> {
-    return this.service.updateCommittedStock(id, quantity);
-  }
+  // @Patch(':id/committed-stock')
+  // async updateCommittedStock(
+  //   @Param('id') id: string,
+  //   @Body('quantity') quantity: number
+  // ): Promise<Medication | null> {
+  //   return this.service.updateCommittedStock(id, quantity);
+  // }
 
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<boolean> {

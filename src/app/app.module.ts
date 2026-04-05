@@ -8,6 +8,7 @@ import { validate } from 'src/config/env.validate';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { MedicationModule } from 'src/medication/medication.module';
 import { UserModule } from 'src/user/user.module';
+import { TicketModule } from 'src/ticket/ticket.module';
 import { AuthModule } from 'src/auth/auth.module';
 import cloudinaryConfig from 'src/config/cloudinary.config';
 
@@ -29,6 +30,7 @@ import cloudinaryConfig from 'src/config/cloudinary.config';
     NotificationsModule,
     MedicationModule,
     UserModule,
+    TicketModule
     AuthModule,
   ],
 })
