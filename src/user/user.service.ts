@@ -29,7 +29,7 @@ export class UserService {
     const salt = Number(this.jwtEnvs.salt);
 
     if (!Number.isInteger(salt) || salt <= 0) {
-      throw new GlobalHttpException('Invalid JWT salt configuration', {
+      throw new GlobalHttpException('Configuración JWT invalido', {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       });
     }
@@ -47,7 +47,7 @@ export class UserService {
 
   private async validateUserId(id: string): Promise<void> {
     if (!isValidObjectId(id)) {
-      throw new GlobalHttpException('Invalid user id', {
+      throw new GlobalHttpException('User Id invalido', {
         statusCode: HttpStatus.BAD_REQUEST,
       });
     }
@@ -63,7 +63,7 @@ export class UserService {
     const user = await this.userModel.findById(id).select('-password').lean();
 
     if (!user) {
-      throw new GlobalHttpException(`User with id ${id} not found`, {
+      throw new GlobalHttpException(`Usuario con id "${id}" no encontrado`, {
         statusCode: HttpStatus.NOT_FOUND,
       });
     }
@@ -78,9 +78,12 @@ export class UserService {
 
     console.log(user);
     if (!user) {
-      throw new GlobalHttpException(`User with email ${email} not found`, {
-        statusCode: HttpStatus.NOT_FOUND,
-      });
+      throw new GlobalHttpException(
+        `Usuario con email "${email}" no encontrado`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
     }
 
     return user;
@@ -95,7 +98,7 @@ export class UserService {
 
     if (existingUserByEmail) {
       throw new GlobalHttpException(
-        `User with email ${createUserDto.email} already exists`,
+        `El email "${createUserDto.email}" no se encuentra disponible`,
         {
           statusCode: HttpStatus.CONFLICT,
         },
@@ -108,7 +111,7 @@ export class UserService {
 
     if (existingUserByDocument) {
       throw new GlobalHttpException(
-        `User with document number ${createUserDto.documentNumber} already exists`,
+        `El numero de documento "${createUserDto.documentNumber}" no se encuentra disponible`,
         {
           statusCode: HttpStatus.CONFLICT,
         },
@@ -178,27 +181,33 @@ export class UserService {
     }
 
     if (user.isEmailVerified) {
-      throw new GlobalHttpException('Email is already verified', {
+      throw new GlobalHttpException('El email ya se encuentra verificado', {
         statusCode: HttpStatus.CONFLICT,
       });
     }
 
     if (!user.registrationVerification) {
-      throw new GlobalHttpException('There is no active verification code', {
-        statusCode: HttpStatus.BAD_REQUEST,
-      });
+      throw new GlobalHttpException(
+        'No hay un codigo de verificación vigente',
+        {
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
+      );
     }
 
     if (user.registrationVerification.expiresAt.getTime() < Date.now()) {
-      throw new GlobalHttpException('Verification code has expired', {
+      throw new GlobalHttpException('El codigo de verificación ha expirado', {
         statusCode: HttpStatus.BAD_REQUEST,
       });
     }
 
     if (user.registrationVerification.attempts >= 5) {
-      throw new GlobalHttpException('Maximum verification attempts exceeded', {
-        statusCode: HttpStatus.TOO_MANY_REQUESTS,
-      });
+      throw new GlobalHttpException(
+        'Cantidad maxima de verificaciones expirada',
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        },
+      );
     }
 
     const isValidCode = await bcrypt.compare(
@@ -210,7 +219,7 @@ export class UserService {
       user.registrationVerification.attempts += 1;
       await user.save();
 
-      throw new GlobalHttpException('Invalid verification code', {
+      throw new GlobalHttpException('Codigo de verificación invalido', {
         statusCode: HttpStatus.BAD_REQUEST,
       });
     }
@@ -221,7 +230,7 @@ export class UserService {
     await user.save();
 
     return {
-      message: 'Email verified successfully',
+      message: 'Email verificado de manera satisfactoria',
     };
   }
 
@@ -231,13 +240,16 @@ export class UserService {
     const user = await this.userModel.findById(userId);
 
     if (!user) {
-      throw new GlobalHttpException(`User with id ${userId} not found`, {
-        statusCode: HttpStatus.NOT_FOUND,
-      });
+      throw new GlobalHttpException(
+        `El usuario con id "${userId}" no fue encontrado`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
     }
 
     if (user.isEmailVerified) {
-      throw new GlobalHttpException('Email is already verified', {
+      throw new GlobalHttpException('El email ya se encuentra verificado', {
         statusCode: HttpStatus.CONFLICT,
       });
     }
@@ -264,7 +276,7 @@ export class UserService {
     );
 
     return {
-      message: 'A new registration verification code was sent',
+      message: 'Un nuevo codigo de verificación ha sido enviado',
     };
   }
 
@@ -277,14 +289,17 @@ export class UserService {
     const user = await this.userModel.findById(userId);
 
     if (!user) {
-      throw new GlobalHttpException(`User with id ${userId} not found`, {
-        statusCode: HttpStatus.NOT_FOUND,
-      });
+      throw new GlobalHttpException(
+        `Usuario con id "${userId}" no encontrado`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
     }
 
     if (user.email === newEmail) {
       throw new GlobalHttpException(
-        'The new email cannot be the same as the current email',
+        'El nuevo email no puede ser el mismo que ya posee actualmente',
         {
           statusCode: HttpStatus.BAD_REQUEST,
         },
@@ -297,9 +312,12 @@ export class UserService {
     });
 
     if (existingUserByEmail) {
-      throw new GlobalHttpException(`Email ${newEmail} is already in use`, {
-        statusCode: HttpStatus.CONFLICT,
-      });
+      throw new GlobalHttpException(
+        `El email "${newEmail}" no se encuentra disponible`,
+        {
+          statusCode: HttpStatus.CONFLICT,
+        },
+      );
     }
 
     const verificationCode = this.generateSixDigitCode();
@@ -325,7 +343,7 @@ export class UserService {
     );
 
     return {
-      message: 'A verification code was sent to the new email address',
+      message: 'Un codigo de verificación ha sido enviado a su nuevo email',
     };
   }
 
@@ -340,14 +358,17 @@ export class UserService {
       .select('+emailChangeVerification.codeHash');
 
     if (!user) {
-      throw new GlobalHttpException(`User with id ${userId} not found`, {
-        statusCode: HttpStatus.NOT_FOUND,
-      });
+      throw new GlobalHttpException(
+        `Usuario con id "${userId}" no se ha encontrado`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
     }
 
     if (!user.pendingEmail || !user.emailChangeVerification) {
       throw new GlobalHttpException(
-        'There is no pending email change request',
+        'No hay una solicitud de cambio de email vigente',
         {
           statusCode: HttpStatus.BAD_REQUEST,
         },
@@ -355,15 +376,18 @@ export class UserService {
     }
 
     if (user.emailChangeVerification.expiresAt.getTime() < Date.now()) {
-      throw new GlobalHttpException('Verification code has expired', {
+      throw new GlobalHttpException('El codigo de verficación ha expirado', {
         statusCode: HttpStatus.BAD_REQUEST,
       });
     }
 
     if (user.emailChangeVerification.attempts >= 5) {
-      throw new GlobalHttpException('Maximum verification attempts exceeded', {
-        statusCode: HttpStatus.TOO_MANY_REQUESTS,
-      });
+      throw new GlobalHttpException(
+        'Maximo numero de intentos de verificación ha expirado',
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        },
+      );
     }
 
     const isValidCode = await bcrypt.compare(
@@ -375,7 +399,7 @@ export class UserService {
       user.emailChangeVerification.attempts += 1;
       await user.save();
 
-      throw new GlobalHttpException('Invalid verification code', {
+      throw new GlobalHttpException('Codigo de verificación invalida', {
         statusCode: HttpStatus.BAD_REQUEST,
       });
     }
@@ -388,7 +412,7 @@ export class UserService {
     await user.save();
 
     return {
-      message: 'Email updated successfully',
+      message: 'Email actualizado de manera exitosa',
     };
   }
 
@@ -398,14 +422,17 @@ export class UserService {
     const existingUser = await this.userModel.findById(id);
 
     if (!existingUser) {
-      throw new GlobalHttpException(`User with id ${id} not found`, {
-        statusCode: HttpStatus.NOT_FOUND,
-      });
+      throw new GlobalHttpException(
+        `Usuario con id "${id}" no se ha encontrado`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
     }
 
     if (updateUserDto.email) {
       throw new GlobalHttpException(
-        'Direct email updates are not allowed. Use the email change verification flow.',
+        'No se puede cambiar de manera directa el email, debe seguir el flujo destinado al cambio de email.',
         {
           statusCode: HttpStatus.BAD_REQUEST,
         },
@@ -420,7 +447,7 @@ export class UserService {
 
       if (documentInUse) {
         throw new GlobalHttpException(
-          `Document number ${updateUserDto.documentNumber} is already in use`,
+          `El numero de documento "${updateUserDto.documentNumber}" no se encuentra disponible`,
           {
             statusCode: HttpStatus.CONFLICT,
           },
@@ -430,7 +457,7 @@ export class UserService {
 
     if (updateUserDto.password) {
       throw new GlobalHttpException(
-        'Direct passwords updates are not allowed. Use the password change verification flow.',
+        'No se puede cambiar de manera directa la contraseña, debe seguir el flujo destinado al cambio de contraseña.',
         {
           statusCode: HttpStatus.BAD_REQUEST,
         },
@@ -462,7 +489,7 @@ export class UserService {
 
     if (partialData.email) {
       throw new GlobalHttpException(
-        'Direct email updates are not allowed. Use the email change verification flow.',
+        'No se puede cambiar de manera directa el email, debe seguir el flujo destinado al cambio de email.',
         {
           statusCode: HttpStatus.BAD_REQUEST,
         },
@@ -477,7 +504,7 @@ export class UserService {
 
       if (documentInUse) {
         throw new GlobalHttpException(
-          `Document number ${partialData.documentNumber} is already in use`,
+          `El numero de documento "${partialData.documentNumber}" no se encuentra disponible`,
           {
             statusCode: HttpStatus.CONFLICT,
           },
@@ -487,7 +514,7 @@ export class UserService {
 
     if (partialData.password) {
       throw new GlobalHttpException(
-        'Direct passwords updates are not allowed. Use the password change verification flow.',
+        'No se puede cambiar de manera directa la contraseña, debe seguir el flujo destinado al cambio de contraseña.',
         {
           statusCode: HttpStatus.BAD_REQUEST,
         },
@@ -503,9 +530,12 @@ export class UserService {
       .lean();
 
     if (!updatedUser) {
-      throw new GlobalHttpException(`User with id ${id} not found`, {
-        statusCode: HttpStatus.NOT_FOUND,
-      });
+      throw new GlobalHttpException(
+        `No se ha encontrado el usuario con id ${id}`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
     }
 
     return updatedUser;
@@ -518,9 +548,12 @@ export class UserService {
       .lean();
 
     if (!users.length) {
-      throw new GlobalHttpException(`No users found with role ${role}`, {
-        statusCode: HttpStatus.NOT_FOUND,
-      });
+      throw new GlobalHttpException(
+        `No se encontraron usuarios con el rol "${role}"`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
     }
 
     return users;
@@ -532,13 +565,16 @@ export class UserService {
     const deletedUser = await this.userModel.findByIdAndDelete(id);
 
     if (!deletedUser) {
-      throw new GlobalHttpException(`User with id ${id} not found`, {
-        statusCode: HttpStatus.NOT_FOUND,
-      });
+      throw new GlobalHttpException(
+        `El usuario de id "${id}" no fue encontrado`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
     }
 
     return {
-      message: `User with id ${id} deleted successfully`,
+      message: `El usuario de id "${id}" fue eliminado de manera exitosa`,
     };
   }
 
@@ -585,6 +621,159 @@ export class UserService {
         ? 'Profile picture updated successfully'
         : 'Profile picture uploaded successfully',
       profilePictureUrl: user.profilePictureUrl,
+    };
+  }
+
+  async requestForgotPasswordCode(email: string): Promise<{ message: string }> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await this.userModel.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      return {
+        message:
+          'Si el email existe, un codigo de verificación se ha enviado para la recuperación de la contraseña',
+      };
+    }
+
+    const hasActiveEmailChangeProcess = Boolean(
+      user.pendingEmail &&
+      user.emailChangeVerification &&
+      user.emailChangeVerification.expiresAt.getTime() >= Date.now(),
+    );
+
+    if (hasActiveEmailChangeProcess) {
+      throw new GlobalHttpException(
+        'Hay un cambio de email en proceso. Completalo antes de realizar un cambio de contraseña.',
+        {
+          statusCode: HttpStatus.CONFLICT,
+        },
+      );
+    }
+
+    const hasActiveForgotPasswordProcess = Boolean(
+      user.forgotPasswordVerification &&
+      user.forgotPasswordVerification.expiresAt.getTime() >= Date.now(),
+    );
+
+    if (hasActiveForgotPasswordProcess) {
+      throw new GlobalHttpException(
+        'Ya hay un codigo de verificación disponible en estos momentos',
+        {
+          statusCode: HttpStatus.CONFLICT,
+        },
+      );
+    }
+
+    const hadExpiredForgotPasswordProcess = Boolean(
+      user.forgotPasswordVerification &&
+      user.forgotPasswordVerification.expiresAt.getTime() < Date.now(),
+    );
+
+    const verificationCode = this.generateSixDigitCode();
+    const verificationCodeHash = await bcrypt.hash(
+      verificationCode,
+      this.saltRounds,
+    );
+
+    user.forgotPasswordVerification = {
+      codeHash: verificationCodeHash,
+      expiresAt: this.getVerificationExpirationDate(),
+      attempts: 0,
+      requestedAt: new Date(),
+    } as User['forgotPasswordVerification'];
+
+    await user.save();
+
+    await this.mailService.sendVerificationCodeEmail(
+      user.email,
+      verificationCode,
+      'forgot-password',
+    );
+
+    return {
+      message: hadExpiredForgotPasswordProcess
+        ? 'El codigo de verficación ha expirado, se envia otro para seguir el proceso'
+        : 'Si el email existe, un codigo de verificación se ha enviado',
+    };
+  }
+
+  async resetForgotPassword(
+    email: string,
+    code: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await this.userModel
+      .findOne({ email: normalizedEmail })
+      .select('+password +forgotPasswordVerification.codeHash');
+
+    if (!user) {
+      throw new GlobalHttpException(
+        `Usuario de email "${normalizedEmail}" no encontrado`,
+        {
+          statusCode: HttpStatus.NOT_FOUND,
+        },
+      );
+    }
+
+    if (!user.forgotPasswordVerification) {
+      throw new GlobalHttpException(
+        'No hay un proceso de cambio de contraseña activo',
+        {
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
+      );
+    }
+
+    if (user.forgotPasswordVerification.expiresAt.getTime() < Date.now()) {
+      throw new GlobalHttpException('El codigo de verificación ha expirado', {
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    if (user.forgotPasswordVerification.attempts >= 5) {
+      throw new GlobalHttpException(
+        'Se ha alcanzado el maximo numero de intentos de verificación',
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        },
+      );
+    }
+
+    const isValidCode = await bcrypt.compare(
+      code,
+      user.forgotPasswordVerification.codeHash,
+    );
+
+    if (!isValidCode) {
+      user.forgotPasswordVerification.attempts += 1;
+      await user.save();
+
+      throw new GlobalHttpException('Codigo de verificación invalido', {
+        statusCode: HttpStatus.BAD_REQUEST,
+      });
+    }
+
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+
+    if (isSamePassword) {
+      throw new GlobalHttpException(
+        'La nueva contraseña no puede ser la misma que la actual',
+        {
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
+      );
+    }
+
+    user.password = await bcrypt.hash(newPassword, this.saltRounds);
+    user.forgotPasswordVerification = null;
+
+    await user.save();
+
+    return {
+      message: 'Contraseña reseteada exitosamente',
     };
   }
 }
