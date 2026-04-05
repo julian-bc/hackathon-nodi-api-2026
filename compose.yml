@@ -5,29 +5,16 @@ services:
     container_name: coraje-backend
     ports:
       - "3000:3000"
+    networks:
+      - coraje-network
     command: npm run start:dev
     volumes:
       - ./:/app
       - /app/node_modules
     env_file:
       - ./.env
-    depends_on: 
-        coraje-database:
-          condition: service_started
 
-  coraje-database: 
-    image: mongo:latest
-    container_name: coraje-database
-    ports:
-      - "27018:27017"
-    env_file:
-      - ./.env
-    environment:
-      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
-    volumes:
-      - "coraje-volume:/data/db"
-      
-volumes:
-  coraje-volume:
+networks:
+  coraje-network:
+    external: true
+    name: coraje-network

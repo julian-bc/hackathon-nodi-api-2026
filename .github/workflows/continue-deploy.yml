@@ -1,0 +1,75 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        type: string
+        default: 'main'
+      
+      folder-name:
+        description: 'Folder name on the server'
+        required: true
+        type: string
+        default: 'projects/coraje-server'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Executing remote SSH commadns
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            FOLDER="${{ inputs.folder-name }}"
+            BRANCH="${{ inputs.branch }}"
+
+            echo "============================================"
+            echo "Deploying branch: $BRANCH to folder: $FOLDER"
+            echo "============================================"
+
+            # Create Project Directory if it doesn't exist
+            mkdir -p "$FOLDER"
+            cd "$FOLDER"
+            echo "${{ github.server_url }}/${{ github.repository }}.git"
+
+            if [ -d ".git" ]; then
+              echo "Git repository already exists. Pulling latest changes..."
+              git remote set-url origin "${{ github.server_url }}/${{ github.repository }}.git"
+              git fetch origin
+              CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+              if [ "$CURRENT_BRANCH" != "$BRANCH" ]; then
+                echo "Current branch ($CURRENT_BRANCH) is different from target branch ($BRANCH). Checking out target branch..."
+                git checkout "$BRANCH"
+              fi
+
+              git reset --hard "origin/$BRANCH"
+              git pull origin "$BRANCH" --ff-only
+
+              echo "Repository updated successfully."
+            else
+              FILE_COUNT=$(ls -A "$FOLDER" | wc -l)
+
+              if [ "$FILE_COUNT" -gt 0 ]; then
+                echo "ERROR: $FOLDER exists and has files but is not a git repository."
+                echo "Remove or empty the folder manually before deploying."
+                exit 1
+              fi
+
+              echo "No git repository found. Cloning into $FOLDER..."
+              git clone --branch "$BRANCH" "${{ github.server_url }}/${{ github.repository }}.git" .
+
+              echo "Repository cloned successfully."
+            fi
+
+            docker compose down
+            docker compose up -d --build
