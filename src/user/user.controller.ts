@@ -18,6 +18,8 @@ import { CreateUserDto } from './dtos/service-dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/service-dtos/update-user.dto';
 import { VerifyCodeDto } from './dtos/controller-dtos/verify-code.dto';
 import { RequestEmailChangeDto } from './dtos/controller-dtos/request-email-change.dto';
+import { RequestForgotPasswordDto } from './dtos/service-dtos/request-forgot-password.dto';
+import { ResetForgotPasswordDto } from './dtos/service-dtos/reset-forgot-password.dto';
 import { UserRoles } from './types/user.types';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -125,5 +127,27 @@ export class UserController {
     file: Express.Multer.File,
   ) {
     return await this.userService.uploadProfilePicture(id, file);
+  }
+
+  @Post('forgot-password/request-code')
+  @HttpCode(HttpStatus.OK)
+  async requestForgotPasswordCode(
+    @Body() requestForgotPasswordDto: RequestForgotPasswordDto,
+  ) {
+    return await this.userService.requestForgotPasswordCode(
+      requestForgotPasswordDto.email,
+    );
+  }
+
+  @Post('forgot-password/reset')
+  @HttpCode(HttpStatus.OK)
+  async resetForgotPassword(
+    @Body() resetForgotPasswordDto: ResetForgotPasswordDto,
+  ) {
+    return await this.userService.resetForgotPassword(
+      resetForgotPasswordDto.email,
+      resetForgotPasswordDto.code,
+      resetForgotPasswordDto.newPassword,
+    );
   }
 }
