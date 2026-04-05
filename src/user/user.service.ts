@@ -69,6 +69,21 @@ export class UserService {
     return user;
   }
 
+  async getUserByEmail(email: string): Promise<User> {
+    const user = await this.userModel
+      .findOne({ email: email })
+      .select('+password');
+
+    console.log(user);
+    if (!user) {
+      throw new GlobalHttpException(`User with email ${email} not found`, {
+        statusCode: HttpStatus.NOT_FOUND,
+      });
+    }
+
+    return user;
+  }
+
   async createUser(
     createUserDto: CreateUserDto,
   ): Promise<{ message: string; user: any }> {

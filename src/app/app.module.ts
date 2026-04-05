@@ -9,6 +9,7 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
 import { MedicationModule } from 'src/medication/medication.module';
 import { UserModule } from 'src/user/user.module';
 import { TicketModule } from 'src/ticket/ticket.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { TicketModule } from 'src/ticket/ticket.module';
     MedicationModule,
     UserModule,
     TicketModule
+    AuthModule,
   ],
 })
 export class AppModule {}
