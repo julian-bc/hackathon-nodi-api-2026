@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Medication } from "./schema/medications.schema";
 import { MedicationRepository } from "./medication.repository";
 import { GlobalHttpException } from "src/common/exceptions/GlobalHttp.exception";
@@ -9,7 +9,8 @@ import { TicketService } from "src/ticket/ticket.service";
 export class MedicationService {
   constructor(
     private readonly repository: MedicationRepository,
-    private readonly ticketService: TicketService
+    @Inject(forwardRef(() => TicketService))
+    private readonly ticketService: TicketService,
   ) {}
 
   async findMedications(options: { 
