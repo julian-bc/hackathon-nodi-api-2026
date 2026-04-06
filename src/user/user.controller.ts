@@ -150,4 +150,14 @@ export class UserController {
       resetForgotPasswordDto.newPassword,
     );
   }
+
+  @Post('forgot-password/resend-code')
+  @HttpCode(HttpStatus.OK)
+  async resendForgotPasswordCode(
+    @Body() requestForgotPasswordDto: RequestForgotPasswordDto,
+  ) {
+    return await this.userService.resendForgotPasswordCode(
+      requestForgotPasswordDto.email,
+    );
+  }
 }
