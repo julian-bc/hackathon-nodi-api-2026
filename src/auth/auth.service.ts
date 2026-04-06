@@ -23,7 +23,7 @@ export class AuthService {
     const user = await this.userService.getUserByEmail(email);
 
     if (!user) {
-      throw new GlobalHttpException('Email or Password is invalid', {
+      throw new GlobalHttpException('Email o contraseña invalida', {
         statusCode: HttpStatus.BAD_REQUEST,
       });
     }
@@ -34,9 +34,18 @@ export class AuthService {
     );
 
     if (!validPassword) {
-      throw new GlobalHttpException('Email or password is invalid', {
+      throw new GlobalHttpException('Email o contraseña invalida', {
         statusCode: HttpStatus.UNAUTHORIZED,
       });
+    }
+
+    if (!user.isEmailVerified) {
+      throw new GlobalHttpException(
+        'El email necesita ser verificado para poder iniciar sesión',
+        {
+          statusCode: HttpStatus.UNAUTHORIZED,
+        },
+      );
     }
 
     const payload = {
@@ -51,5 +60,15 @@ export class AuthService {
       accessToken,
       payload,
     };
+  }
+
+  getPayloadFromToken(token: string): PayloadType {
+    try {
+      return this.jwtService.verify(token);
+    } catch {
+      throw new GlobalHttpException('Token invalido o expirado', {
+        statusCode: HttpStatus.UNAUTHORIZED,
+      });
+    }
   }
 }
