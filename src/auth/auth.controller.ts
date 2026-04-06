@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -34,5 +35,11 @@ export class AuthController {
     });
 
     return { success: true, user: payload };
+  }
+
+  @Get('logout')
+  logout(@Res() res: Response) {
+    res.clearCookie('access_token');
+    return res.status(200).send({ message: 'Logged out successfully' });
   }
 }
