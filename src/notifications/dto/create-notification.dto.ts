@@ -5,6 +5,10 @@ export class CreateNotificationDto {
   @IsString()
   userId!: string;
 
+  @IsOptional()
+  @IsString()
+  recipientName?: string;
+
   @IsString()
   title!: string;
 
