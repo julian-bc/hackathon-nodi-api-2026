@@ -1,5 +1,16 @@
-import { IsArray, IsEnum, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { NotificationChannel, NotificationType } from '../schema/notificacion.schema';
+
+export class NotificationMetadataDto {
+  @IsOptional()
+  @IsString()
+  medicineId?: string;
+
+  @IsOptional()
+  @IsString()
+  ticketId?: string;
+}
 
 export class CreateNotificationDto {
   @IsString()
@@ -33,6 +44,7 @@ export class CreateNotificationDto {
   phone?: string;
 
   @IsOptional()
-  @IsObject()
-  metadata?: Record<string, any>;
+  @ValidateNested()
+  @Type(() => NotificationMetadataDto)
+  metadata?: NotificationMetadataDto;
 }
