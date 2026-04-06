@@ -8,7 +8,7 @@ import { TicketService } from "./ticket.service";
 import { UserModule } from "src/user/user.module";
 
 @Module({
-  exports: [],
+  exports: [TicketService],
   imports: [
     MedicationModule,
     UserModule,

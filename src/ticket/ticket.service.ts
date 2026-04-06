@@ -244,6 +244,35 @@ export class TicketService {
     return await this.repository.update(ticketId,ticket);
   }
 
+  async updateDeliveryTypesAfterShipment(productId: string) {
+    // 1. Buscamos todos los tickets que tengan este producto marcado como 'next-shipment'
+    const ticketsWithNextShipment = await this.repository.find({
+      "items": {
+        $elemMatch: {
+          productId: new Types.ObjectId(productId),
+          deliveryType: 'next-shipment'
+        }
+      }
+    }, { skip: 0, limit: 1000 }); // Traemos todos los afectados
+
+    for (const ticket of ticketsWithNextShipment.items) {
+      let modified = false;
+
+      // 2. Recorremos los ítems del ticket para cambiar la etiqueta
+      ticket.items.forEach(item => {
+        if (item.productId.toString() === productId && item.deliveryType === 'next-shipment') {
+          item.deliveryType = 'immediate';
+          modified = true;
+        }
+      });
+
+      // 3. Si hubo cambios, guardamos el ticket actualizado
+      if (modified) {
+        await this.updateTicket(ticket);
+      }
+    }
+  }
+
   private async reprocessWaitingTickets(productId: string) {
     // 1. Buscamos quién más quiere este producto y está en 'waiting'
     const pendingTickets = await this.repository.findTicketWithProductIdWaiting(productId);
