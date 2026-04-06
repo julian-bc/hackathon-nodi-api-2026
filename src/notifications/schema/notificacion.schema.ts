@@ -13,6 +13,7 @@ export enum NotificationType {
   STOCK_LOW_ALERT = 'STOCK_LOW_ALERT',
   STOCK_EMPTY_ALERT = 'STOCK_EMPTY_ALERT',
   STOCK_ACTIVE_ALERT = 'STOCK_ACTIVE_ALERT',
+  TURN_REMINDER = 'TURN_REMINDER',
 
   // Tickets
   TICKET_READY = 'TICKET_READY',
@@ -29,6 +30,9 @@ export enum NotificationChannel {
 export class Notification {
   @Prop({ required: true })
   userId!: string;
+
+  @Prop({ type: String, default: null })
+  recipientName!: string | null;
 
   @Prop({ required: true })
   title!: string;

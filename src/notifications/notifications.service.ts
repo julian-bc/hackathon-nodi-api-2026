@@ -139,4 +139,32 @@ export class NotificationsService {
       { read: true, readAt: new Date() },
     );
   }
+
+  async getAll(type?: string) {
+    const filter = type ? { type } : {};
+    return this.notificationModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+  }
+
+  async getStats() {
+    const [total, unread, criticalStock, tickets] = await Promise.all([
+      this.notificationModel.countDocuments(),
+      this.notificationModel.countDocuments({ read: false }),
+      this.notificationModel.countDocuments({
+        type: { $in: ['STOCK_LOW_ALERT', 'STOCK_EMPTY_ALERT'] },
+      }),
+      this.notificationModel.countDocuments({
+        type: { $in: ['TICKET_READY', 'MEDICINE_AVAILABLE'] },
+      }),
+    ]);
+
+    return { total, unread, criticalStock, tickets };
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.notificationModel.findByIdAndDelete(id);
+  }
 }

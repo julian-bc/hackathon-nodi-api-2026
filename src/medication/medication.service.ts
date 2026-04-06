@@ -1,12 +1,17 @@
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Medication } from "./schema/medications.schema";
 import { MedicationRepository } from "./medication.repository";
 import { GlobalHttpException } from "src/common/exceptions/GlobalHttp.exception";
 import databaseConfig from "src/config/database.config";
+import { TicketService } from "src/ticket/ticket.service";
 
 @Injectable()
 export class MedicationService {
-  constructor(private readonly repository: MedicationRepository) {}
+  constructor(
+    private readonly repository: MedicationRepository,
+    @Inject(forwardRef(() => TicketService))
+    private readonly ticketService: TicketService,
+  ) {}
 
   async findMedications(options: { 
     page: number; 
@@ -288,6 +293,40 @@ export class MedicationService {
     const finalPhysicalStock = updates.stock !== undefined ? updates.stock : med.stock;
     updates.status = this.calculateStatus(finalPhysicalStock, med.minStock);
     await this.repository.update(id, updates);
+  }
+
+  async receiveShipment(id: string): Promise<Medication | null> {
+    const med = await this.findMedication(id);
+
+    if (!med.incomingStock || med.incomingStock <= 0) {
+      throw new GlobalHttpException(
+        "No hay un envío pendiente registrado para este medicamento.",
+        { statusCode: 400 }
+      );
+    }
+
+    // 1. Calculamos cuánto era para clientes y cuánto para la estantería
+    const reserved = med.reservedIncomingStock || 0;
+    const surplus = med.incomingStock - reserved; // Lo que sobra para venta libre
+
+    // 2. Actualizamos contadores
+    const newStock = med.stock + surplus;
+    const newCommitted = (med.committedStock || 0) + reserved;
+
+    // 3. Persistimos y limpiamos campos de logística
+    const updatedMed = await this.repository.update(id, {
+      stock: newStock,
+      committedStock: newCommitted,
+      incomingStock: 0,
+      reservedIncomingStock: 0,
+      repositionDate: null,
+      status: this.calculateStatus(newStock, med.minStock),
+      updatedAt: new Date(),
+    });
+
+    await this.ticketService.updateDeliveryTypesAfterShipment(id);
+
+    return updatedMed;
   }
 
   private calculateStatus(stock: number, minStock: number) {

@@ -78,4 +78,9 @@ export class MedicationController {
   async remove(@Param('id') id: string): Promise<boolean> {
     return this.service.deleteMedication(id);
   }
+
+  @Patch(':id/receive-shipment')
+  async receiveShipment(@Param('id') id: string) {
+    return await this.service.receiveShipment(id);
+  }
 }

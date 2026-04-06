@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { MedicationService } from "src/medication/medication.service";
 import { TicketRepository } from "./ticket.repository";
 import { ICreateTicketDto } from "./dtos/CreateTicketDto";
@@ -11,6 +11,7 @@ import { UserService } from "src/user/user.service";
 @Injectable()
 export class TicketService {
   constructor(
+    @Inject(forwardRef(() => MedicationService))
     private readonly medicationService: MedicationService,
     private readonly userService: UserService,
     private readonly repository: TicketRepository,
@@ -100,6 +101,8 @@ export class TicketService {
     let totalProcessedQty = 0;
     let totalWaitingQty = 0;
 
+    
+
     for (const itemDto of dto.products) {
       const med = await this.medicationService.findMedication(itemDto.productId);
       if (!med) continue;
@@ -139,39 +142,45 @@ export class TicketService {
     }
 
     // --- LÓGICA DE ESTADO DEL TICKET ---
-    let finalStatus: "completed" | "partially-completed" | "waiting";
+    let fulfillmentStatus: "completed" | "partially-completed" | "waiting";
 
     if (totalWaitingQty === 0) {
-      // No hubo nada en espera
-      finalStatus = 'completed';
+      fulfillmentStatus = 'completed';
     } else if (totalWaitingQty === totalProcessedQty) {
-      // Todo lo que se pidió quedó en espera
-      finalStatus = 'waiting';
+      fulfillmentStatus = 'waiting';
     } else {
-      // Se cubrió una parte y otra no
-      finalStatus = 'partially-completed';
+      fulfillmentStatus = 'partially-completed';
     }
+
+    const hasImmediate = finalItems.some(i => i.deliveryType === 'immediate');
+    const hasNext = finalItems.some(i => i.deliveryType === 'next-shipment');
+    const hasWaiting = finalItems.some(i => i.deliveryType === 'waiting');
+
+    let status: "registered" | "in-progress" | "pending";
+
+    if (hasWaiting) {
+      status = "pending";
+    } else if (hasNext) {
+      status = "in-progress";
+    } else {
+      status = "registered";
+}
 
     return this.repository.saveTicket({
       ticketNumber: `TI-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
       items: finalItems,
       totalAmount,
       observations,
-      status: finalStatus,
+      status,
+      fulfillmentStatus,
       customerId: dto.customerId
     });
   }
 
-  async cancelMultipleItems (ticketId: string, dto: CancelItemsDto) {
+ async cancelMultipleItems (ticketId: string, dto: CancelItemsDto) {
     const ticket = await this.findTicket(ticketId);
 
-    if (ticket.status === 'registered') {
-      throw new GlobalHttpException(
-        "Este ticket tiene estado 'registered'. No se pueden realizar cancelaciones ni movimientos de stock.",
-        { statusCode: 403 }
-      );
-    }
-
+  
     const idsToCancel = dto.products.map(p => p.productId.toString());
     const productsToReprocess: string[] = [];
 
@@ -217,18 +226,18 @@ export class TicketService {
     return ticket;
   }
 
-  async markAsRegistered(id: string) {
-    const ticket = await this.findTicket(id);
-    ticket.status = 'registered';
-    return await this.updateTicket(ticket);
-  }
+//  async markAsRegistered(id: string) {
+//    const ticket = await this.findTicket(id);
+//    ticket.status = 'registered';
+//    return await this.updateTicket(ticket);
+//  }
 
   async permanentDelete(id: string): Promise<any> {
     const ticket = await this.findTicket(id);
 
-    if (ticket.status !== 'registered') {
+    if (ticket.fulfillmentStatus !== 'waiting') {
       throw new GlobalHttpException(
-        "Para borrar el ticket de la DB, primero debe estar en estado 'registered'.",
+        "El ticket no se encuentra en un estado válido para su eliminación física.",
         { statusCode: 400 }
       );
     }
@@ -242,6 +251,35 @@ export class TicketService {
     const ticketId = ticket._id || ticket.id;
 
     return await this.repository.update(ticketId,ticket);
+  }
+
+  async updateDeliveryTypesAfterShipment(productId: string) {
+    // 1. Buscamos todos los tickets que tengan este producto marcado como 'next-shipment'
+    const ticketsWithNextShipment = await this.repository.find({
+      "items": {
+        $elemMatch: {
+          productId: new Types.ObjectId(productId),
+          deliveryType: 'next-shipment'
+        }
+      }
+    }, { skip: 0, limit: 1000 }); // Traemos todos los afectados
+
+    for (const ticket of ticketsWithNextShipment.items) {
+      let modified = false;
+
+      // 2. Recorremos los ítems del ticket para cambiar la etiqueta
+      ticket.items.forEach(item => {
+        if (item.productId.toString() === productId && item.deliveryType === 'next-shipment') {
+          item.deliveryType = 'immediate';
+          modified = true;
+        }
+      });
+
+      // 3. Si hubo cambios, guardamos el ticket actualizado
+      if (modified) {
+        await this.updateTicket(ticket);
+      }
+    }
   }
 
   private async reprocessWaitingTickets(productId: string) {
@@ -289,26 +327,38 @@ export class TicketService {
 
   private updateTicketGlobalStatus(ticket: any) {
     if (!ticket.items || ticket.items.length === 0) {
-      ticket.status = 'completed'; 
+      ticket.fulfillmentStatus = 'completed';
+      ticket.status = 'registered';
       return;
     }
 
     const totalItems = ticket.items.length;
-    const waitingItemsCount = ticket.items.filter(
-      (item: any) => item.deliveryType === 'waiting'
-    ).length;
 
-    if (waitingItemsCount === 0) {
-    // CASO 1: No hay nada pendiente. Todo es 'immediate' o 'next-shipment'.
-      ticket.status = 'completed';
-    } else if (waitingItemsCount === totalItems) {
-      ticket.status = 'waiting';
+    const waitingItems = ticket.items.filter(i => i.deliveryType === 'waiting').length;
+    const nextItems = ticket.items.filter(i => i.deliveryType === 'next-shipment').length;
+
+    // 🔹 1. fulfillmentStatus (lógica de stock)
+    if (waitingItems === 0) {
+      ticket.fulfillmentStatus = 'completed';
+    } else if (waitingItems === totalItems) {
+      ticket.fulfillmentStatus = 'waiting';
     } else {
-      ticket.status = 'partially-completed';
+      ticket.fulfillmentStatus = 'partially-completed';
     }
 
+    // 🔹 2. status (lógica de negocio/UI)
+    if (waitingItems > 0) {
+      ticket.status = 'pending';
+    } else if (nextItems > 0) {
+      ticket.status = 'in-progress';
+    } else {
+      ticket.status = 'registered';
+    }
+
+    // 🔹 total
     ticket.totalAmount = ticket.items.reduce(
-      (acc: number, item: any) => acc + (item.quantity * item.unitPrice), 0
+      (acc: number, item: any) => acc + (item.quantity * item.unitPrice),
+      0
     );
   }
 
