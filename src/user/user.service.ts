@@ -96,7 +96,16 @@ export class UserService {
       email: createUserDto.email,
     });
 
-    if (existingUserByEmail) {
+    if (existingUserByEmail && !existingUserByEmail.isEmailVerified) {
+      const previousRegis = await this.userModel.findOneAndDelete({
+        _id: existingUserByEmail?._id,
+      });
+      console.log(
+        `registration with id ${previousRegis?._id} deleted successfully`,
+      );
+    }
+
+    if (existingUserByEmail && existingUserByEmail?.isEmailVerified) {
       throw new GlobalHttpException(
         `El email "${createUserDto.email}" no se encuentra disponible`,
         {
