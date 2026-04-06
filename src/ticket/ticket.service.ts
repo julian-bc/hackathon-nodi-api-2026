@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { MedicationService } from "src/medication/medication.service";
 import { TicketRepository } from "./ticket.repository";
 import { ICreateTicketDto } from "./dtos/CreateTicketDto";
@@ -11,6 +11,7 @@ import { UserService } from "src/user/user.service";
 @Injectable()
 export class TicketService {
   constructor(
+    @Inject(forwardRef(() => MedicationService))
     private readonly medicationService: MedicationService,
     private readonly userService: UserService,
     private readonly repository: TicketRepository,
