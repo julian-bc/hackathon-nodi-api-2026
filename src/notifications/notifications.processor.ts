@@ -31,6 +31,7 @@ export class NotificationsProcessor {
     // 1. Guardar en DB
     await this.notificationModel.create({
       userId: data.userId,
+      recipientName: data.recipientName,
       title: data.title,
       message: data.message,
       type: data.type,
