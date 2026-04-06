@@ -5,11 +5,12 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -38,8 +39,22 @@ export class AuthController {
   }
 
   @Get('logout')
-  logout(@Res() res: Response) {
+  logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token');
     return res.status(200).send({ message: 'Logged out successfully' });
+  }
+
+  @Get('refresh')
+  @HttpCode(HttpStatus.OK)
+  refresh(@Res({ passthrough: true }) res: Response, @Req() req: Request) {
+    const token = req.cookies['access_token'];
+
+    if (!token) {
+      res.status(204).send({ message: 'No cookie sent' });
+    }
+
+    const payload = this.authService.getPayloadFromToken(token);
+
+    return payload;
   }
 }
