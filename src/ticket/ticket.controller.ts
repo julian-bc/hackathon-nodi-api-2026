@@ -50,10 +50,10 @@ export class TicketController {
     return await this.ticketService.cancelMultipleItems(id, dto);
   }
 
-  @Patch(':id/register')
-  async register(@Param('id') id: string) {
-    return await this.ticketService.markAsRegistered(id);
-  }
+//  @Patch(':id/register')
+//  async register(@Param('id') id: string) {
+//    return await this.ticketService.markAsRegistered(id);
+//  }
 
   @Delete(':id/purge')
   async purge(@Param('id') id: string) {

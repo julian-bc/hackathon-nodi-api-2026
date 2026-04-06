@@ -40,12 +40,18 @@ export class Ticket {
   @Prop({ type: [TicketItemSchema], required: true })
   items!: TicketItem[];
 
+  @Prop({
+    required: true,
+    enum: ["completed", "partially-completed", "waiting"],
+  })
+  fulfillmentStatus!: "completed" | "partially-completed" | "waiting";
+
   @Prop({ 
     required: true, 
-    enum: ["completed", "partially-completed", "waiting", "registered"],
-    default: "completed" 
+    enum: ["registered", "in-progress", "pending"],
+    default: "registered" 
   })
-  status!: "completed" | "partially-completed" | "waiting" | "registered";
+  status!: "registered" | "in-progress" | "pending";
 
   @Prop({ type: [String], default: [] })
   observations!: string[];
