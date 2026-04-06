@@ -785,4 +785,70 @@ export class UserService {
       message: 'Contraseña reseteada exitosamente',
     };
   }
+
+  async resendForgotPasswordCode(email: string): Promise<{ message: string }> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await this.userModel.findOne({ email: normalizedEmail });
+
+    /**
+     * Mantenemos respuesta genérica para no revelar si el email existe o no.
+     */
+    if (!user) {
+      return {
+        message:
+          'Si el email existe, un nuevo codigo de verificación ha sido enviado para la recuperación de la contraseña',
+      };
+    }
+
+    const hasActiveEmailChangeProcess = Boolean(
+      user.pendingEmail &&
+      user.emailChangeVerification &&
+      user.emailChangeVerification.expiresAt.getTime() >= Date.now(),
+    );
+
+    if (hasActiveEmailChangeProcess) {
+      throw new GlobalHttpException(
+        'Hay un cambio de email en proceso. Completalo antes de realizar un cambio de contraseña.',
+        {
+          statusCode: HttpStatus.CONFLICT,
+        },
+      );
+    }
+
+    if (!user.forgotPasswordVerification) {
+      throw new GlobalHttpException(
+        'No hay un proceso activo de recuperación de contraseña para este email',
+        {
+          statusCode: HttpStatus.BAD_REQUEST,
+        },
+      );
+    }
+
+    const verificationCode = this.generateSixDigitCode();
+    const verificationCodeHash = await bcrypt.hash(
+      verificationCode,
+      this.saltRounds,
+    );
+
+    user.forgotPasswordVerification = {
+      codeHash: verificationCodeHash,
+      expiresAt: this.getVerificationExpirationDate(),
+      attempts: 0,
+      requestedAt: new Date(),
+    } as User['forgotPasswordVerification'];
+
+    await user.save();
+
+    await this.mailService.sendVerificationCodeEmail(
+      user.email,
+      verificationCode,
+      'forgot-password',
+    );
+
+    return {
+      message:
+        'Si el email existe, un nuevo codigo de verificación ha sido enviado para la recuperación de la contraseña',
+    };
+  }
 }
