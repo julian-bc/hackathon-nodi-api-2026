@@ -20,21 +20,38 @@
         .limit(options.limit)
         .exec();
 
-      const statusCounts = await this.medicationModel.aggregate([
-        { $group: { _id: "$status", total: { $sum: 1 } } }
+      const aggregateResult = await this.medicationModel.aggregate([
+        {
+          $facet: {
+            byStatus: [
+              { $group: { _id: "$status", total: { $sum: 1 } } }
+            ],
+            inReposition: [
+              { 
+                $match: { 
+                  repositionDate: { $exists: true, $ne: null } 
+                } 
+              },
+              { $count: "total" }
+            ]
+          }
+        }
       ]);
 
       const counts: Record<string, number> = {
         active: 0,
         lowStock: 0,
         outOfStock: 0,
+        inReposition: 0,
       };
 
-      statusCounts.forEach((c) => {
+      aggregateResult[0].forEach((c: any) => {
         if (c._id === "active") counts.active = c.total;
         if (c._id === "low-stock") counts.lowStock = c.total;
         if (c._id === "out-of-stock") counts.outOfStock = c.total;
       });
+
+      counts.inReposition = aggregateResult[0].inReposition[0]?.total || 0;
 
       return { items, counts };
     }

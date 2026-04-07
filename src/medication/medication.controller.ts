@@ -23,12 +23,14 @@ export class MedicationController {
     @Query('limit') limit = 10,
     @Query('name') name?: string,
     @Query('status') status?: "active" | "low-stock" | "out-of-stock",
+    @Query('hasReposition') hasReposition?: string, // Viene como string "true"
   ): Promise<PaginatedResult<Medication>> {
     return this.service.findMedications({ 
       page,
       limit,
       name,
-      status
+      status,
+      hasReposition: hasReposition === 'true'
     });
   }
 
