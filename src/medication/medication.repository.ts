@@ -45,14 +45,18 @@
         inReposition: 0,
       };
 
-      aggregateResult[0].forEach((c: any) => {
-        if (c._id === "active") counts.active = c.total;
-        if (c._id === "low-stock") counts.lowStock = c.total;
-        if (c._id === "out-of-stock") counts.outOfStock = c.total;
-      });
+      const results = aggregateResult[0];
 
-      counts.inReposition = aggregateResult[0].inReposition[0]?.total || 0;
+      if (results.byStatus) {
+        results.byStatus.forEach((c: any) => {
+          if (c._id === "active") counts.active = c.total;
+          if (c._id === "low-stock") counts.lowStock = c.total;
+          if (c._id === "out-of-stock") counts.outOfStock = c.total;
+        });
+      }
 
+      counts.inReposition = results.inReposition[0]?.total || 0;
+      
       return { items, counts };
     }
 
