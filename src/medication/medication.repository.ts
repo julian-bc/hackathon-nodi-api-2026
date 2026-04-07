@@ -45,18 +45,19 @@
         inReposition: 0,
       };
 
-      const results = aggregateResult[0];
+      const facetData = aggregateResult[0];
 
-      if (results.byStatus) {
-        results.byStatus.forEach((c: any) => {
-          if (c._id === "active") counts.active = c.total;
-          if (c._id === "low-stock") counts.lowStock = c.total;
-          if (c._id === "out-of-stock") counts.outOfStock = c.total;
-        });
+      if (facetData) {
+        if (Array.isArray(facetData.byStatus)) {
+          facetData.byStatus.forEach((c: any) => {
+            if (c._id === "active") counts.active = c.total;
+            if (c._id === "low-stock") counts.lowStock = c.total;
+            if (c._id === "out-of-stock") counts.outOfStock = c.total;
+          });
+        }
+        counts.inReposition = facetData.inReposition?.[0]?.total || 0;
       }
 
-      counts.inReposition = results.inReposition[0]?.total || 0;
-      
       return { items, counts };
     }
 
