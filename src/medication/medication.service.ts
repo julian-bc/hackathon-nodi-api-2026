@@ -18,14 +18,17 @@ export class MedicationService {
     limit: number; 
     name?: string;
     status?: "active" | "low-stock" | "out-of-stock"; 
+    hasReposition?: boolean;
   }) {
-    const { page, limit, name, status } = options;
+    const { page, limit, name, status, hasReposition } = options;
 
     const filter: any = {};
     if (name) {
       filter.name = { $regex: name, $options: 'i' };
     }
-    if (status) {
+    if (hasReposition) {
+      filter.repositionDate = { $exists: true, $ne: null };
+    } else if (status) {
       filter.status = status;
     }
 

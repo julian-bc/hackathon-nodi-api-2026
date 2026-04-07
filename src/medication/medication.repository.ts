@@ -10,35 +10,58 @@
       private readonly medicationModel: Model<MedicationDocument>,
     ) {}
 
-    async find(
-      filter: any, 
-      options: { skip: number; limit: number }
-    ): Promise<{ items: Medication[]; counts: Record<string, number> }> {
-      const items = await this.medicationModel
+  async find(
+    filter: any, 
+    options: { skip: number; limit: number }
+  ): Promise<{ items: Medication[]; counts: Record<string, number> }> {
+    const [items, aggregateResult] = await Promise.all([
+      this.medicationModel
         .find(filter)
         .skip(options.skip)
         .limit(options.limit)
-        .exec();
+        .exec(),
+      this.medicationModel.aggregate([
+        {
+          $facet: {
+            byStatus: [
+              { $group: { _id: "$status", total: { $sum: 1 } } }
+            ],
+            inReposition: [
+              { 
+                $match: { 
+                  repositionDate: { $exists: true, $ne: null } 
+                } 
+              },
+              { $count: "total" }
+            ]
+          }
+        }
+      ])
+    ]);
 
-      const statusCounts = await this.medicationModel.aggregate([
-        { $group: { _id: "$status", total: { $sum: 1 } } }
-      ]);
+    const counts: Record<string, number> = {
+      active: 0,
+      lowStock: 0,
+      outOfStock: 0,
+      inReposition: 0,
+    };
 
-      const counts: Record<string, number> = {
-        active: 0,
-        lowStock: 0,
-        outOfStock: 0,
-      };
+    const results = aggregateResult[0];
 
-      statusCounts.forEach((c) => {
-        if (c._id === "active") counts.active = c.total;
-        if (c._id === "low-stock") counts.lowStock = c.total;
-        if (c._id === "out-of-stock") counts.outOfStock = c.total;
-      });
+    if (results) {
+      if (Array.isArray(results.byStatus)) {
+        results.byStatus.forEach((c: any) => {
+          if (c._id === "active") counts.active = c.total;
+          if (c._id === "low-stock") counts.lowStock = c.total;
+          if (c._id === "out-of-stock") counts.outOfStock = c.total;
+        });
+      }
 
-      return { items, counts };
+      counts.inReposition = results.inReposition?.[0]?.total || 0;
     }
 
+    return { items, counts };
+  }
     async count(filter: any): Promise<number> {
       return this.medicationModel.countDocuments(filter).exec();
     }
