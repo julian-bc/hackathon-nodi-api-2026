@@ -282,7 +282,7 @@ export class TicketService {
     }
   }
 
-  private async reprocessWaitingTickets(productId: string) {
+  async reprocessWaitingTickets(productId: string) {
     // 1. Buscamos quién más quiere este producto y está en 'waiting'
     const pendingTickets = await this.repository.findTicketWithProductIdWaiting(productId);
 

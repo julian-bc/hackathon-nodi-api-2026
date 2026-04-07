@@ -326,6 +326,8 @@ export class MedicationService {
 
     await this.ticketService.updateDeliveryTypesAfterShipment(id);
 
+    await this.ticketService.reprocessWaitingTickets(id);
+
     return updatedMed;
   }
 
