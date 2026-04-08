@@ -37,6 +37,8 @@ export class TicketRepository {
       if (c._id === "completed") counts.completed = c.total;
       if (c._id === "partially-completed") counts.partiallyCompleted = c.total;
       if (c._id === "waiting") counts.waiting = c.total;
+      if (c._id === "registered") counts.registered = c.total;
+      if (c._id === "pending") counts.pending = c.total;
     });
 
     return { items, counts };
